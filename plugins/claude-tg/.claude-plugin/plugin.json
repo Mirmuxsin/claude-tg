@@ -5,7 +5,7 @@
   "author": {
     "name": "The claude-tg Authors"
   },
-  "homepage": "https://github.com/mirmuxsin/claude-tg",
+  "homepage": "https://github.com/Mirmuxsin/claude-tg",
   "license": "MIT",
   "keywords": ["telegram", "voice", "transcription", "hooks", "remote", "headless"]
 }
