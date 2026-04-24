@@ -40,8 +40,71 @@ say ""
 read -rp "Telegram bot token (from @BotFather): " BOT_TOKEN
 [ -n "$BOT_TOKEN" ] || { err "bot token is required"; exit 1; }
 
-read -rp "Your Telegram chat_id (send /start to your bot, then /id or check api logs): " CHAT_ID
-[ -n "$CHAT_ID" ] || { err "chat_id is required"; exit 1; }
+# Auto-discover the chat id: generate a random pairing code, ask the user to
+# send it to their bot, then poll getUpdates until it shows up. Avoids the
+# "find your chat_id" scavenger hunt and is safer than grabbing any random
+# /start that arrives.
+PAIRING_CODE="CLAUDE-TG-$(LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 8)"
+
+say ""
+say "Now pair this installer with your Telegram account."
+say "  1. Open your bot in Telegram (the one the token above belongs to)"
+say "  2. Send it exactly this message:"
+say ""
+say "       ${YLW}$PAIRING_CODE${CLR}"
+say ""
+say "Waiting up to 3 minutes for the pairing message..."
+
+CHAT_ID=""
+OFFSET=0
+export PAIRING_CODE
+for attempt in $(seq 1 90); do
+  RESP="$(curl -sS --max-time 5 \
+    "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=2&allowed_updates=%5B%22message%22%5D" \
+    || true)"
+
+  export RESP
+  PARSED="$(python3 <<'PY' 2>/dev/null || true
+import json, os
+code = os.environ.get("PAIRING_CODE", "")
+raw  = os.environ.get("RESP", "")
+try:
+    data = json.loads(raw or "{}")
+except Exception:
+    print(""); print(0); raise SystemExit
+found_chat = ""
+max_id = 0
+for upd in data.get("result", []):
+    max_id = max(max_id, upd.get("update_id", 0))
+    msg = upd.get("message") or upd.get("edited_message") or {}
+    if msg.get("text", "").strip() == code:
+        frm = msg.get("from") or {}
+        found_chat = str(frm.get("id", ""))
+        break
+print(found_chat)
+print(max_id)
+PY
+)"
+  CHAT_ID="$(printf '%s\n' "$PARSED" | sed -n '1p')"
+  MAX_ID="$(printf '%s\n' "$PARSED" | sed -n '2p')"
+
+  if [ -n "$CHAT_ID" ]; then
+    ok "Paired with chat_id $CHAT_ID"
+    break
+  fi
+
+  if [ "${MAX_ID:-0}" -gt 0 ]; then
+    OFFSET=$((MAX_ID + 1))
+  fi
+
+  sleep 2
+done
+
+if [ -z "$CHAT_ID" ]; then
+  warn "Pairing timed out — paste your chat_id manually."
+  read -rp "chat_id: " CHAT_ID
+  [ -n "$CHAT_ID" ] || { err "chat_id is required"; exit 1; }
+fi
 
 read -rp "Groq API key (get one at console.groq.com, leave empty to skip voice transcription): " GROQ_KEY || true
 
@@ -70,7 +133,7 @@ fi
 
 # --- merge settings.json ------------------------------------------------
 # We merge, never replace. Existing allow rules and hooks stay put.
-python3 - <<PYEOF
+SETTINGS_PATH="$SETTINGS" PLUGIN_DIR="$PLUGIN_DIR" CHAT_ID="$CHAT_ID" python3 <<'PYEOF'
 import json, os, pathlib
 
 settings_path = pathlib.Path(os.environ["SETTINGS_PATH"])
@@ -128,9 +191,6 @@ plugins.setdefault("telegram@claude-plugins-official", True)
 settings_path.write_text(json.dumps(data, indent=2) + "\n")
 print(f"✓ Updated {settings_path}")
 PYEOF
-
-SETTINGS_PATH="$SETTINGS" PLUGIN_DIR="$PLUGIN_DIR" CHAT_ID="$CHAT_ID" bash -c 'true'  # just to scope the env vars above
-# (the python heredoc above already ran — no-op here)
 
 # --- make scripts executable --------------------------------------------
 chmod +x "$PLUGIN_DIR/hooks/notify-bash.sh" "$PLUGIN_DIR/scripts/transcribe-voice.sh"

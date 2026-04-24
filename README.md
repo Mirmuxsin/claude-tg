@@ -35,7 +35,7 @@ repo layers the above on top of it.
 ## Install
 
 ```sh
-git clone https://github.com/YOUR-USERNAME/claude-tg.git
+git clone https://github.com/mirmuxsin/claude-tg.git
 cd claude-tg
 bash install/install.sh
 ```
