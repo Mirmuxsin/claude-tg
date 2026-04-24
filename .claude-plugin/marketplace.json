@@ -1,0 +1,15 @@
+{
+  "name": "claude-tg",
+  "owner": {
+    "name": "The claude-tg Authors",
+    "url": "https://github.com/YOUR-USERNAME/claude-tg"
+  },
+  "plugins": [
+    {
+      "name": "claude-tg",
+      "source": "./plugins/claude-tg",
+      "description": "Drive Claude Code from Telegram: voice-message transcription, live Bash command notifications, sensible auto-accept permissions. Runs headless on a Linux VPS.",
+      "version": "0.1.0"
+    }
+  ]
+}

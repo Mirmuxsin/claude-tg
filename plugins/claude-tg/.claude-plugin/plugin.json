@@ -1,0 +1,11 @@
+{
+  "name": "claude-tg",
+  "version": "0.1.0",
+  "description": "Drive Claude Code from Telegram: voice-message transcription (Groq Whisper), live Bash command notifications, sensible auto-accept permissions.",
+  "author": {
+    "name": "The claude-tg Authors"
+  },
+  "homepage": "https://github.com/YOUR-USERNAME/claude-tg",
+  "license": "MIT",
+  "keywords": ["telegram", "voice", "transcription", "hooks", "remote", "headless"]
+}

@@ -1,0 +1,22 @@
+[Unit]
+Description=Claude Code — Telegram-connected headless session (claude-tg)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Runs `claude` inside a detached screen session so you can attach with
+# `screen -r claude-tg` if you ever need the TUI. @REPO_DIR@ and @HOME@ are
+# substituted by install.sh.
+Type=forking
+User=root
+WorkingDirectory=@HOME@
+Environment=HOME=@HOME@
+Environment=TERM=xterm-256color
+ExecStart=/usr/bin/screen -dmS claude-tg /usr/bin/env bash -lc 'claude --channels plugin:telegram@claude-plugins-official'
+ExecStop=/usr/bin/screen -S claude-tg -X quit
+Restart=always
+RestartSec=10
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

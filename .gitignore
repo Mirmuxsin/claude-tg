@@ -1,0 +1,6 @@
+# Local editor/OS junk
+.DS_Store
+*.swp
+*~
+
+# Nothing user-specific belongs in the repo — secrets live outside.
