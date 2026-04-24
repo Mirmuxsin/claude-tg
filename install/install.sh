@@ -44,7 +44,12 @@ read -rp "Telegram bot token (from @BotFather): " BOT_TOKEN
 # send it to their bot, then poll getUpdates until it shows up. Avoids the
 # "find your chat_id" scavenger hunt and is safer than grabbing any random
 # /start that arrives.
-PAIRING_CODE="CLAUDE-TG-$(LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 8)"
+#
+# Use python3 rather than `tr </dev/urandom | head -c 8` because that pipeline
+# fails under `set -euo pipefail`: head closes the pipe after 8 bytes, tr gets
+# SIGPIPE (exit 141), and pipefail kills the whole script — silently, right
+# after the token prompt.
+PAIRING_CODE="CLAUDE-TG-$(python3 -c 'import secrets,string; print("".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(8)))')"
 
 say ""
 say "Now pair this installer with your Telegram account."
